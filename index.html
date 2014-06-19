@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <!--The viewport meta tag is used to improve the presentation and behavior of the samples 
+      on iOS devices-->
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no">
+    <title>Global Polio Eradication Initiative</title>
+    
+    <link rel="stylesheet" href="http://js.arcgis.com/3.9/js/dojo/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="http://js.arcgis.com/3.9/js/esri/css/esri.css">
+    <style>
+      html, body, #mapDiv {
+        padding:0;
+        margin:0;
+        height:100%;
+      }
+
+	  #timeInfo {
+	  }
+      #mapDiv {
+        position: relative;
+      }
+
+      #bottomPanel {
+        left: 50%;
+        margin: 0 auto;
+        margin-left: -500px;
+        position: absolute; 
+        bottom: 2.5em;
+      }
+
+	  #chartThreePlusDose {
+		width: 250px; 
+		height: 150px; 
+		margin: 5px auto 0px auto;
+	  }
+      #timeInfo{
+		visibility: hidden;
+		border-radius: 4px;
+        border: solid 2px #ccc;
+        background-color: #fff;
+        display: block;
+        padding: 5px;
+        position: relative;
+        text-align: center;
+        width: 1000px;
+        z-index: 99;
+      }
+    </style>
+
+    <script src="http://js.arcgis.com/3.9/"></script>
+    <script type="text/javascript" src="res/config.js"></script>
+    
+    <script>
+    var map;
+	var chartThreePlusDose, chartZeroDose;
+      require([
+        "esri/map", 
+        "esri/layers/ArcGISTiledMapServiceLayer",
+        "esri/layers/ArcGISDynamicMapServiceLayer",
+        "esri/IdentityManager",
+        "esri/ServerInfo",
+        "esri/geometry/Extent",
+        "esri/tasks/IdentifyTask",
+        "esri/tasks/IdentifyParameters",
+        "esri/TimeExtent", 
+        "esri/dijit/TimeSlider",
+        "dojo/_base/array", 
+        "dojo/dom-style",
+        "dijit/layout/BorderContainer",
+        "dijit/layout/ContentPane",
+		"dojox/charting/Chart2D",
+ 		"dojox/charting/themes/Claro",
+ 		"dojox/charting/plot2d/Columns",
+	    "dojox/charting/axis2d/Default",
+        "dojo/dom", 
+        "dojo/parser",
+        "dojo/ready",
+        "dojo/domReady!"
+      ], function(
+        Map, 
+        ArcGISTiledMapServiceLayer,
+        ArcGISDynamicMapServiceLayer, 
+        IdentityManager,
+        ServerInfo,
+        Extent,
+        IdentifyTask,
+        IdentifyParameters,
+        TimeExtent, 
+        TimeSlider,
+        arrayUtils,
+        domStyle,
+        BorderContainer,
+        ContentPane,
+        Chart,
+        ChartTheme, 
+        Columns,
+        ChartDefaultAxes,
+        dom,
+        parser,
+        ready
+      ) {
+      	var identifyTask, identifyParams;
+      	
+      	ready(function() {
+      		parser.parse();
+      		
+	        map = new Map("mapDiv", {
+	        		extent: new Extent(config.initialExtent)});
+	
+	/*
+	        var serverInfo = new ServerInfo({
+	        	adminTokenServiceUrl:"http://drumlin:6080/arcgis/tokens/",
+	        	server:"http://drumlin:6080"
+	        });
+	        var userInfo = {username:"GPEI", password:"kill.polio"};
+	        IdentityManager.generateToken(serverInfo, userInfo).then(function(value) {
+	        	var tokne = value;
+	        });
+	*/
+	
+	        
+	        var basemap = new ArcGISTiledMapServiceLayer(config.services.basemap);
+	        // map.addLayer(basemap);
+	        
+	        // Dose layers - admin polygon level
+	        var lyr3Dose = new ArcGISDynamicMapServiceLayer(config.services.ThreePlusDosePct_poly, 
+	        				{visible:true});
+			// var lyr0Dose = new ArcGISDynamicMapServiceLayer(config.services.ZeroDoesPct_poly, {visible:false});
+	/*
+	        //apply a definition expression so only some features are shown 
+	        var layerDefinitions = [];
+	        layerDefinitions[0] = "FIELD_KID=1000148164";
+	        opLayer.setLayerDefinitions(layerDefinitions);*/
+
+        	createCharts();
+	
+	
+	        map.addLayers([basemap, lyr3Dose]);
+			map.on("click", doIdentify);
+	
+	        map.on("layers-add-result", function() {
+	        	// initSlider();
+	        	initIdentify();
+	        });
+	
+	/*
+	        function initSlider() {
+	          var timeSlider = new TimeSlider({
+	            style: "width: 100%;"
+	          }, dom.byId("timeSliderDiv"));
+	          map.setTimeSlider(timeSlider);
+	          
+	          var timeExtent = new TimeExtent();
+	          timeExtent.startTime = new Date("1/1/1921 UTC");
+	          timeExtent.endTime = new Date("12/31/2009 UTC");
+	          timeSlider.setThumbCount(2);
+	          timeSlider.createTimeStopsByTimeInterval(timeExtent, 2, "esriTimeUnitsYears");
+	          timeSlider.setThumbIndexes([0,1]);
+	          timeSlider.setThumbMovingRate(2000);
+	          timeSlider.startup();
+	          
+	          //add labels for every other time stop
+	          var labels = arrayUtils.map(timeSlider.timeStops, function(timeStop, i) { 
+	            if ( i % 2 === 0 ) {
+	              return timeStop.getUTCFullYear(); 
+	            } else {
+	              return "";
+	            }
+	          }); 
+	          
+	          timeSlider.setLabels(labels);
+	          
+	          timeSlider.on("time-extent-change", function(evt) {
+	            var startValString = evt.startTime.getUTCFullYear();
+	            var endValString = evt.endTime.getUTCFullYear();
+	            dom.byId("daterange").innerHTML = "<i>" + startValString + " to " + endValString  + "<\/i>";
+	          });
+	        }*/
+	
+			function doIdentify (event) {
+	            identifyParams.width = map.width;
+	            identifyParams.height = map.height;
+				identifyParams.geometry = event.mapPoint;
+				identifyParams.mapExtent = map.extent;
+	            identifyTask.execute(
+	            	identifyParams, 
+	            	function (idResults) {chartResults(idResults, event);}
+	            );		
+			}
+			function chartResults(idResults, clickEvent) {
+				var ary3DoseChartVals = idResults.map(function(val) {
+					return val.feature.attributes["THREE_PLUS_DOSES_PER"];
+				});
+				domStyle.set("chartThreePlusDose", {"visibility":"visible"});
+				chartThreePlusDose.updateSeries("default", ary3DoseChartVals);
+				// chartThreePlusDose.fullRender();
+			}
+			
+			function initIdentify() {
+	            identifyTask = new IdentifyTask(lyr3Dose.url);
+	
+	            identifyParams = new IdentifyParameters();
+	            identifyParams.tolerance = 1;
+	            identifyParams.returnGeometry = false;
+	            identifyParams.layerIds = [0];
+	            identifyParams.layerOption = IdentifyParameters.LAYER_OPTION_ALL;
+			}
+	        
+	        function createCharts() {
+			 
+				chartThreePlusDose = new Chart("chartThreePlusDose");
+			    // Set the theme
+			    chartThreePlusDose.setTheme(ChartTheme);
+			 
+			    // Add the only/default plot
+			    chartThreePlusDose.addPlot("default", {
+			        type: Columns,
+			        stroke: {color: "darkgray", width: 2}, 
+			        fill: "tan",
+			        gap: 10
+/*
+			        hAxis: "x",
+			        vAxis: "y",
+			        labels: true,
+*/
+			        // fill: {color:"tan"}
+			    });
+			 
+			    // Add axes
+
+			    chartThreePlusDose.addAxis("x", {
+			    	labels: [
+			    		{value:1, text:"P6m"},
+			    		{value:2, text:"P6-12m"}
+			    	]
+			    });
+			    chartThreePlusDose.addAxis("y", { 
+			    	vertical: true, includeZero: true,  
+			    	fixLower: "major", fixUpper: "major", 
+			    	title: null
+			    });
+
+			 
+			    // Add the series of data
+			    chartThreePlusDose.addSeries("default", [30, 50]);
+			    
+			    // Add tooltips
+			    // var tip = new ChartTooltip(chartThreePlusDose, "default");
+			    
+			    chartThreePlusDose.render();
+	        }
+		});
+	});
+    </script>
+  </head>
+  <body class="claro">
+
+    <div id="mapDiv">
+      <div id="bottomPanel">
+<!--
+        <div id="timeInfo">
+          <div>Hugoton Gas Field Wells from <span id="daterange">1921 to 2009</span> (Completion date)</div>
+
+          <div id="timeSliderDiv"></div>
+        </div>-->
+      </div>
+    </div>
+        	<div>TEST</div>
+      	<div id="charts">
+      		<div id="chartThreePlusDose" jsId="chartThreePlusDose"></div>
+      	</div>
+</body>
+</html>
