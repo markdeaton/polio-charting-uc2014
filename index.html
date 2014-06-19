@@ -20,6 +20,7 @@
 	  }
       #mapDiv {
         position: relative;
+        height: 70%;
       }
 
       #bottomPanel {
@@ -54,9 +55,9 @@
     
     <script>
     var map;
-	var chartThreePlusDose, chartZeroDose;
       require([
         "esri/map", 
+        "esri/kernel",
         "esri/layers/ArcGISTiledMapServiceLayer",
         "esri/layers/ArcGISDynamicMapServiceLayer",
         "esri/IdentityManager",
@@ -66,11 +67,14 @@
         "esri/tasks/IdentifyParameters",
         "esri/TimeExtent", 
         "esri/dijit/TimeSlider",
+        "dojo/cookie",
+        "dojo/json",
         "dojo/_base/array", 
+        "dojo/_base/unload",
         "dojo/dom-style",
         "dijit/layout/BorderContainer",
         "dijit/layout/ContentPane",
-		"dojox/charting/Chart2D",
+		"dojox/charting/Chart",
  		"dojox/charting/themes/Claro",
  		"dojox/charting/plot2d/Columns",
 	    "dojox/charting/axis2d/Default",
@@ -80,6 +84,7 @@
         "dojo/domReady!"
       ], function(
         Map, 
+        kernel,
         ArcGISTiledMapServiceLayer,
         ArcGISDynamicMapServiceLayer, 
         IdentityManager,
@@ -89,7 +94,10 @@
         IdentifyParameters,
         TimeExtent, 
         TimeSlider,
+        cookie,
+        JSON,
         arrayUtils,
+        baseUnload,
         domStyle,
         BorderContainer,
         ContentPane,
@@ -102,9 +110,16 @@
         ready
       ) {
       	var identifyTask, identifyParams;
-      	
+	 	var chartThreePlusDose, chartZeroDose;
+     	var cred = "esri_jsapi_id_manager_data"; // cookie/local storage name
+     	
       	ready(function() {
-      		parser.parse();
+			// store credentials/serverInfos before the page unloads
+			baseUnload.addOnUnload(storeCredentials);
+			// look for credentials in local storage
+			loadCredentials();
+
+     		parser.parse();
       		
 	        map = new Map("mapDiv", {
 	        		extent: new Extent(config.initialExtent)});
@@ -184,18 +199,18 @@
 	            identifyParams.height = map.height;
 				identifyParams.geometry = event.mapPoint;
 				identifyParams.mapExtent = map.extent;
-	            identifyTask.execute(
-	            	identifyParams, 
-	            	function (idResults) {chartResults(idResults, event);}
-	            );		
-			}
-			function chartResults(idResults, clickEvent) {
-				var ary3DoseChartVals = idResults.map(function(val) {
-					return val.feature.attributes["THREE_PLUS_DOSES_PER"];
-				});
-				domStyle.set("chartThreePlusDose", {"visibility":"visible"});
-				chartThreePlusDose.updateSeries("default", ary3DoseChartVals);
-				// chartThreePlusDose.fullRender();
+	            identifyTask.execute(identifyParams, function (idResults) {
+            		// Chart the results
+					var ary3DoseChartVals = idResults.map(function(val) {
+						return val.feature.attributes["THREE_PLUS_DOSES_PER"];
+					});
+					// domStyle.set("chartThreePlusDose", {"visibility":"visible"});
+					console.log(JSON.stringify(ary3DoseChartVals));
+					var ary3DoseChartValsCorrected = ary3DoseChartVals.map(Number);
+					console.log(JSON.stringify(ary3DoseChartValsCorrected));
+					chartThreePlusDose.updateSeries("seriesThreePlusDose", ary3DoseChartValsCorrected);
+					chartThreePlusDose.fullRender();
+				});		
 			}
 			
 			function initIdentify() {
@@ -217,18 +232,17 @@
 			    // Add the only/default plot
 			    chartThreePlusDose.addPlot("default", {
 			        type: Columns,
-			        stroke: {color: "darkgray", width: 2}, 
-			        fill: "tan",
 			        gap: 10
 /*
 			        hAxis: "x",
 			        vAxis: "y",
-			        labels: true,
-*/
+			        labels: true*/
+
 			        // fill: {color:"tan"}
 			    });
 			 
 			    // Add axes
+
 
 			    chartThreePlusDose.addAxis("x", {
 			    	labels: [
@@ -239,20 +253,75 @@
 			    chartThreePlusDose.addAxis("y", { 
 			    	vertical: true, includeZero: true,  
 			    	fixLower: "major", fixUpper: "major", 
-			    	title: null
+			    	min:0, max:100,
+			    	title: "3+ Dose Percent"
 			    });
+
 
 			 
 			    // Add the series of data
-			    chartThreePlusDose.addSeries("default", [30, 50]);
+			    chartThreePlusDose.addSeries("seriesThreePlusDose", [], 
+			    		{ stroke: {color: "darkgray", width: 2}, 
+			        	  fill: "tan"
+			       		}	
+				);
 			    
 			    // Add tooltips
 			    // var tip = new ChartTooltip(chartThreePlusDose, "default");
-			    
-			    chartThreePlusDose.render();
-	        }
-		});
-	});
+
+                    }
+
+                    function loadCredentials() {
+                        var idJson, idObject;
+
+                        if (supports_local_storage()) {
+                            // read from local storage
+                            idJson = window.localStorage.getItem(cred);
+                        } else {
+                            // read from a cookie
+                            idJson = cookie(cred);
+                        }
+
+                        if (idJson && idJson != "null" && idJson.length > 4) {
+                            idObject = JSON.parse(idJson);
+                            kernel.id.initialize(idObject);
+                        } else {
+                            // console.log("didn't find anything to load :(");
+                        }
+                    }
+
+                    function storeCredentials() {
+                        // make sure there are some credentials to persist
+                        if (kernel.id.credentials.length === 0) {
+                            return;
+                        }
+
+                        // serialize the ID manager state to a string
+                        var idString = JSON.stringify(kernel.id.toJson());
+                        // store it client side
+                        if (supports_local_storage()) {
+                            // use local storage
+                            window.localStorage.setItem(cred, idString);
+                            // console.log("wrote to local storage");
+                        } else {
+                            // use a cookie
+                            cookie(cred, idString, {
+                                expires : 1
+                            });
+                            // console.log("wrote a cookie :-/");
+                        }
+                    }
+
+                    function supports_local_storage() {
+                        try {
+                            return "localStorage" in window && window["localStorage"] !== null;
+                        } catch( e ) {
+                            return false;
+                        }
+                    }
+
+                    });
+                });
     </script>
   </head>
   <body class="claro">
@@ -269,7 +338,7 @@
     </div>
         	<div>TEST</div>
       	<div id="charts">
-      		<div id="chartThreePlusDose" jsId="chartThreePlusDose"></div>
+      		<div id="chartThreePlusDose"></div>
       	</div>
 </body>
 </html>
