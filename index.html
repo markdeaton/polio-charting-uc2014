@@ -111,7 +111,8 @@
       ) {
       	var identifyTask, identifyParams;
 	 	var chartThreePlusDose, chartZeroDose;
-     	var cred = "esri_jsapi_id_manager_data"; // cookie/local storage name
+     	var cred = "esriuc2014_apl_polio_creds"; // cookie/local storage name
+     	var dlyrThreePlusDose;
      	
       	ready(function() {
 			// store credentials/serverInfos before the page unloads
@@ -140,7 +141,7 @@
 	        // map.addLayer(basemap);
 	        
 	        // Dose layers - admin polygon level
-	        var lyr3Dose = new ArcGISDynamicMapServiceLayer(config.services.ThreePlusDosePct_poly, 
+	        dlyrThreePlusDose = new ArcGISDynamicMapServiceLayer(config.services.ThreePlusDosePct_poly, 
 	        				{visible:true});
 			// var lyr0Dose = new ArcGISDynamicMapServiceLayer(config.services.ZeroDoesPct_poly, {visible:false});
 	/*
@@ -149,15 +150,15 @@
 	        layerDefinitions[0] = "FIELD_KID=1000148164";
 	        opLayer.setLayerDefinitions(layerDefinitions);*/
 
-        	createCharts();
+ 	
 	
-	
-	        map.addLayers([basemap, lyr3Dose]);
+	        map.addLayers([basemap, dlyrThreePlusDose]);
 			map.on("click", doIdentify);
 	
 	        map.on("layers-add-result", function() {
 	        	// initSlider();
 	        	initIdentify();
+		       	createCharts();
 	        });
 	
 	/*
@@ -205,16 +206,19 @@
 						return val.feature.attributes["THREE_PLUS_DOSES_PER"];
 					});
 					// domStyle.set("chartThreePlusDose", {"visibility":"visible"});
+					
+					// NOTE: Very strange JSON behavior here. Numbers are put in the array of strings,
+					// which the charting system won't accept. Convert back to numbers using the map function.
 					console.log(JSON.stringify(ary3DoseChartVals));
 					var ary3DoseChartValsCorrected = ary3DoseChartVals.map(Number);
 					console.log(JSON.stringify(ary3DoseChartValsCorrected));
 					chartThreePlusDose.updateSeries("seriesThreePlusDose", ary3DoseChartValsCorrected);
-					chartThreePlusDose.fullRender();
+					chartThreePlusDose.render();
 				});		
 			}
 			
 			function initIdentify() {
-	            identifyTask = new IdentifyTask(lyr3Dose.url);
+	            identifyTask = new IdentifyTask(dlyrThreePlusDose.url);
 	
 	            identifyParams = new IdentifyParameters();
 	            identifyParams.tolerance = 1;
@@ -222,28 +226,23 @@
 	            identifyParams.layerIds = [0];
 	            identifyParams.layerOption = IdentifyParameters.LAYER_OPTION_ALL;
 			}
-	        
+			
+			
 	        function createCharts() {
 			 
-				chartThreePlusDose = new Chart("chartThreePlusDose");
+				chartThreePlusDose = new Chart("chartThreePlusDose", {"title":"3+ Dose Percent"});
 			    // Set the theme
 			    chartThreePlusDose.setTheme(ChartTheme);
-			 
+
 			    // Add the only/default plot
 			    chartThreePlusDose.addPlot("default", {
 			        type: Columns,
-			        gap: 10
-/*
-			        hAxis: "x",
-			        vAxis: "y",
-			        labels: true*/
-
-			        // fill: {color:"tan"}
+			        gap: 10,
+			        labels: true,
+			       	styleFunc: styleThreePlusDose
 			    });
 			 
 			    // Add axes
-
-
 			    chartThreePlusDose.addAxis("x", {
 			    	labels: [
 			    		{value:1, text:"P6m"},
@@ -253,72 +252,84 @@
 			    chartThreePlusDose.addAxis("y", { 
 			    	vertical: true, includeZero: true,  
 			    	fixLower: "major", fixUpper: "major", 
-			    	min:0, max:100,
-			    	title: "3+ Dose Percent"
+			    	min:0, max:100
 			    });
 
-
-			 
 			    // Add the series of data
-			    chartThreePlusDose.addSeries("seriesThreePlusDose", [], 
-			    		{ stroke: {color: "darkgray", width: 2}, 
-			        	  fill: "tan"
-			       		}	
+			    chartThreePlusDose.addSeries("seriesThreePlusDose", [40, 70, 85, 95], 
+			    		{ stroke: {color: "darkgray", width: 2} }	
 				);
 			    
 			    // Add tooltips
-			    // var tip = new ChartTooltip(chartThreePlusDose, "default");
+			    //var tip = new ChartTooltip(chartThreePlusDose, "default");
+				chartThreePlusDose.render();
+			}
+			
+			// COLUMN CHART RENDERING
+			function styleThreePlusDose(item){
+	        	console.log(JSON.stringify(item));
+				if(item < 60) {
+					return { fill : "red" };
+				}else if(item >= 60 && item < 80) {
+					return { fill: "orange" };
+				}else if (item >= 80 && item < 90) {
+					return { fill : "yellow" };
+				}else if (item >= 90) {
+					return { fill : "green" };
+				}
+				return {};
+			}
+			
+			// END COLUMN CHART RENDERING
 
-                    }
+            function loadCredentials() {
+                var idJson, idObject;
 
-                    function loadCredentials() {
-                        var idJson, idObject;
+                if (supports_local_storage()) {
+                    // read from local storage
+                    idJson = window.localStorage.getItem(cred);
+                } else {
+                    // read from a cookie
+                    idJson = cookie(cred);
+                }
 
-                        if (supports_local_storage()) {
-                            // read from local storage
-                            idJson = window.localStorage.getItem(cred);
-                        } else {
-                            // read from a cookie
-                            idJson = cookie(cred);
-                        }
+                if (idJson && idJson != "null" && idJson.length > 4) {
+                    idObject = JSON.parse(idJson);
+                    kernel.id.initialize(idObject);
+                } else {
+                    // console.log("didn't find anything to load :(");
+                }
+            }
 
-                        if (idJson && idJson != "null" && idJson.length > 4) {
-                            idObject = JSON.parse(idJson);
-                            kernel.id.initialize(idObject);
-                        } else {
-                            // console.log("didn't find anything to load :(");
-                        }
-                    }
+            function storeCredentials() {
+                // make sure there are some credentials to persist
+                if (kernel.id.credentials.length === 0) {
+                    return;
+                }
 
-                    function storeCredentials() {
-                        // make sure there are some credentials to persist
-                        if (kernel.id.credentials.length === 0) {
-                            return;
-                        }
+                // serialize the ID manager state to a string
+                var idString = JSON.stringify(kernel.id.toJson());
+                // store it client side
+                if (supports_local_storage()) {
+                    // use local storage
+                    window.localStorage.setItem(cred, idString);
+                    // console.log("wrote to local storage");
+                } else {
+                    // use a cookie
+                    cookie(cred, idString, {
+                        expires : 1
+                    });
+                    // console.log("wrote a cookie :-/");
+                }
+            }
 
-                        // serialize the ID manager state to a string
-                        var idString = JSON.stringify(kernel.id.toJson());
-                        // store it client side
-                        if (supports_local_storage()) {
-                            // use local storage
-                            window.localStorage.setItem(cred, idString);
-                            // console.log("wrote to local storage");
-                        } else {
-                            // use a cookie
-                            cookie(cred, idString, {
-                                expires : 1
-                            });
-                            // console.log("wrote a cookie :-/");
-                        }
-                    }
-
-                    function supports_local_storage() {
-                        try {
-                            return "localStorage" in window && window["localStorage"] !== null;
-                        } catch( e ) {
-                            return false;
-                        }
-                    }
+            function supports_local_storage() {
+                try {
+                    return "localStorage" in window && window["localStorage"] !== null;
+                } catch( e ) {
+                    return false;
+                }
+            }
 
                     });
                 });
