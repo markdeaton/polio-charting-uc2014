@@ -206,6 +206,13 @@
 					console.log(JSON.stringify(ary3DoseChartVals));
 					var ary3DoseChartValsCorrected = ary3DoseChartVals.map(Number);
 					console.log(JSON.stringify(ary3DoseChartValsCorrected));
+					
+					// Pad with extra empty values so the chart's custom, chronological-order labels apply correctly
+					var iLen = ary3DoseChartValsCorrected.length;
+					for (var i = 0; i < 4- iLen; i++) {
+						ary3DoseChartValsCorrected.unshift(null);
+					}
+					
 					chartThreePlusDose.updateSeries("seriesThreePlusDose", ary3DoseChartValsCorrected);
 					chartThreePlusDose.render();
 				});		
@@ -241,14 +248,18 @@
 			    chartThreePlusDose.addAxis("x", {
 			    	minorTicks: false,
 			    	labels: [
-						{value:1, text:"P6m"},
-						{value:2, text:"P6-12m"}
+						{value:1, text:"PPPP6m"},
+						{value:2, text:"PPP6m"},
+						{value:3, text:"PP6m"},
+						{value:4, text:"P6m"},
 					],
+					rotation:-45,
+					fontColor:"black"/*
+					,
+																															labelFunc: function(defaultLabel, rawVal, precision) {
+											return defaultLabel;
+										}*/
 					
-			    	
-					labelFunc: function(defaultLabel, rawVal, precision) {
-						return defaultLabel;
-					}
 					
 			    	
 			    });
