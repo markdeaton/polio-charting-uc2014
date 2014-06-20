@@ -5,5 +5,5 @@ var config = {
         "ZeroDosePct_poly":"http://drumlin:6080/arcgis/rest/services/GPEI/ZeroDosePercent/MapServer",
         "ThreePlusDosePct_poly":"http://drumlin:6080/arcgis/rest/services/GPEI/ThreePlusDosePercent/MapServer"
     },
-    "initialExtent": {xmin:-9.92173025843839, ymin:-67.3299802178466, xmax:131.819837912305, ymax:66.6470122528879}
+    "initialExtent": {xmin:-1366064.68456421, ymin:-6500946.0502866, xmax:13413589.8747449, ymax:7469081.88976928, "spatialReference":{"wkid":102100}}
 };
