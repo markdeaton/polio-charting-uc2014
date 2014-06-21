@@ -142,12 +142,14 @@
 	        // map.addLayer(basemap);
 	        
 	        // Dose layers - admin polygon level
+/*
 	        dlyrThreePlusDose = new ArcGISDynamicMapServiceLayer(config.services.ThreePlusDosePct_poly, 
 	        				{visible:false});
-			dlyrZeroDose = new ArcGISDynamicMapServiceLayer(config.services.ZeroDosePct_poly, {visible:false});
+			dlyrZeroDose = new ArcGISDynamicMapServiceLayer(config.services.ZeroDosePct_poly, {visible:false});*/
+
 			dlyrNPAFPRate = new ArcGISDynamicMapServiceLayer(config.services.NPAFPRate_poly, {visible:true});
 			
-	        map.addLayers([basemap, dlyrThreePlusDose, dlyrZeroDose, dlyrNPAFPRate]);
+	        map.addLayers([basemap, /*dlyrThreePlusDose, dlyrZeroDose,*/ dlyrNPAFPRate]);
 			map.on("click", doIdentify);
 	
 	        map.on("layers-add-result", function() {
@@ -235,12 +237,14 @@
 			}
 			
 			function initIdentify() {
+/*
 	            identifyThreePlusDoseTask = new IdentifyTask(dlyrThreePlusDose.url);
 	            identifyThreePlusDoseParams = new IdentifyParameters();
 	            identifyThreePlusDoseParams.tolerance = 0;
 	            identifyThreePlusDoseParams.returnGeometry = false;
 	            identifyThreePlusDoseParams.layerIds = [0];
-	            identifyThreePlusDoseParams.layerOption = IdentifyParameters.LAYER_OPTION_ALL;
+	            identifyThreePlusDoseParams.layerOption = IdentifyParameters.LAYER_OPTION_ALL;*/
+
 	            
 	            identifyNPAFPRateTask = new IdentifyTask(dlyrNPAFPRate.url);
 	            identifyNPAFPRateParams = new IdentifyParameters();
