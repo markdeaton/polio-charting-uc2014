@@ -37,7 +37,7 @@
 	  	width: 250px; 
 		height: 150px; 
 		margin: 5px auto 0px auto;
-		visibility: collapse;
+		visibility: visible;
 	  }	
 	  #chartNPAFPRate {
 		width: 250px; 
@@ -122,6 +122,7 @@
         ready
       ) {
       	var identifyThreePlusDoseTask, identifyThreePlusDoseParams;
+      	var identifyNPAFPRateTask, identifyNPAFPRateParams;
 	 	var chartThreePlusDose, chartZeroDose, chartNPAFPRate;
      	var cred = "esriuc2014_apl_polio_creds"; // cookie/local storage name
      	var dlyrThreePlusDose, dlyrZeroDose, dlyrNPAFPRate;
@@ -142,14 +143,14 @@
 	        // map.addLayer(basemap);
 	        
 	        // Dose layers - admin polygon level
-/*
+
 	        dlyrThreePlusDose = new ArcGISDynamicMapServiceLayer(config.services.ThreePlusDosePct_poly, 
 	        				{visible:false});
-			dlyrZeroDose = new ArcGISDynamicMapServiceLayer(config.services.ZeroDosePct_poly, {visible:false});*/
+/*			dlyrZeroDose = new ArcGISDynamicMapServiceLayer(config.services.ZeroDosePct_poly, {visible:false});*/
 
 			dlyrNPAFPRate = new ArcGISDynamicMapServiceLayer(config.services.NPAFPRate_poly, {visible:true});
 			
-	        map.addLayers([basemap, /*dlyrThreePlusDose, dlyrZeroDose,*/ dlyrNPAFPRate]);
+	        map.addLayers([basemap, dlyrThreePlusDose, /*dlyrZeroDose,*/ dlyrNPAFPRate]);
 			map.on("click", doIdentify);
 	
 	        map.on("layers-add-result", function() {
@@ -194,30 +195,32 @@
 	
 			function doIdentify (event) {
 				// Which service are we identifying and charting?
-				var identifyTask = identifyNPAFPRateTask;
-				var identifyParams = identifyNPAFPRateParams;
-				var chart = chartNPAFPRate;
-				
+				performIdentify(identifyNPAFPRateTask, identifyNPAFPRateParams, chartNPAFPRate, "ValueNumeric", "PeriodStartDate", event.mapPoint);
+				performIdentify(identifyThreePlusDoseTask, identifyThreePlusDoseParams, chartThreePlusDose, 
+					"THREE_PLUS_DOSES_PER", "PeriodStartDate", event.mapPoint);
+			}	
+			
+			function performIdentify(identifyTask, identifyParams, chart, sAttrFieldName, sDateFieldName, mapPoint) {
 	            identifyParams.width = map.width;
 	            identifyParams.height = map.height;
-				identifyParams.geometry = event.mapPoint;
+				identifyParams.geometry = mapPoint;
 				identifyParams.mapExtent = map.extent;
 	            identifyTask.execute(identifyParams, function (idResults) {
             		// Chart the results
             		// Sort in chronological order
             		console.log(idResults);
             		idResults.sort(function(a,b) {
-            			var aDate = new Date(a.feature.attributes["PeriodEndDate"]);
-            			var bDate = new Date(b.feature.attributes["PeriodEndDate"]);
+            			var aDate = new Date(a.feature.attributes[sDateFieldName]);
+            			var bDate = new Date(b.feature.attributes[sDateFieldName]);
             			if (aDate < bDate) return -1;
             			else if (bDate < aDate) return 1;
             			else return 0;
             		});
             		console.log(idResults);
 					var aryChartVals = idResults.map(function(val) {
-						return val.feature.attributes["ValueNumeric"];
+						return val.feature.attributes[sAttrFieldName];
 					});
-					// domStyle.set("chartThreePlusDose", {"visibility":"visible"});
+
 					
 					// NOTE: Very strange JSON behavior here. Numbers are put in the array of strings,
 					// which the charting system won't accept. Convert back to numbers using the map function.
@@ -237,13 +240,13 @@
 			}
 			
 			function initIdentify() {
-/*
+
 	            identifyThreePlusDoseTask = new IdentifyTask(dlyrThreePlusDose.url);
 	            identifyThreePlusDoseParams = new IdentifyParameters();
 	            identifyThreePlusDoseParams.tolerance = 0;
 	            identifyThreePlusDoseParams.returnGeometry = false;
 	            identifyThreePlusDoseParams.layerIds = [0];
-	            identifyThreePlusDoseParams.layerOption = IdentifyParameters.LAYER_OPTION_ALL;*/
+	            identifyThreePlusDoseParams.layerOption = IdentifyParameters.LAYER_OPTION_ALL;
 
 	            
 	            identifyNPAFPRateTask = new IdentifyTask(dlyrNPAFPRate.url);
@@ -269,10 +272,78 @@
 			
 			function createCharts() {
 				// createThreePlusDoseChart();
+				chartThreePlusDose = createChart("chartThreePlusDose", "3+ Dose Percent",
+					[{maxVal:60, color:[255, 0, 0]},
+					 {maxVal:80, color:[230, 152, 0]},
+					 {maxVal:90, color:[255, 255, 115]},
+					 {maxVal:Infinity, color:[199, 215, 158]}
+					], 
+					{max:100}
+			);
 				// createZeroDoseChart();
-				createNPAFPRateChart();
+				// createNPAFPRateChart();
+				chartNPAFPRate = createChart("chartNPAFPRate", "NPAFP Rate", 
+					[{maxVal:1, color:[255, 0, 0]},
+					 {maxVal:2, color:[255, 255, 115]},
+					 {maxVal:4, color:[171, 205, 102]},
+					 {maxVal:Infinity, color:[0, 115, 76]}
+					], 
+					{}
+				);
 			}
 			
+			/**
+			 * sDivName		: what <div> element the chart will be associated with
+			 * sTitle		: the title for the chart
+			 * arySymbology	: array of {maxVal, color[]} items. The maxVal is an attribute data value and these
+			 * 				  must be specified in ascending order.
+			 * oXMinMax		: object specifying "min" and "max" y values for the chart (both optional)  
+			 */
+	        function createChart(sDivName, sTitle, arySymbology, oXMinMax) {
+			 
+				var chart = new Chart(sDivName, {"title":sTitle});
+			    // Set the theme
+			    chart.setTheme(ChartTheme);
+
+			    // Add the only/default plot
+			    chart.addPlot("default", {
+			        type: Columns,
+			        gap: 10,
+			        labels: true,
+			        labelStyle: "outside",
+			       	styleFunc: function(item){
+			        	console.log(JSON.stringify(item));
+			        	for (var i = 0; i < arySymbology.length; i++) {
+			        		var symbol = arySymbology[i];
+			        		if (item < symbol.maxVal) return { fill: symbol.color };
+			        	}
+					},
+			       	animate: { duration: 500, easing: easing.linear }
+			    });
+			 
+			    // Add axes
+			    chart.addAxis("x", chartXAxisParams);
+			    var chartYAxisParams = { 
+			    	vertical: true, includeZero: true,  
+			    	fixLower: "major", fixUpper: "major"
+			    };
+			    if (oXMinMax.hasOwnProperty("min")) chartYAxisParams.min = oXMinMax.min;
+			    if (oXMinMax.hasOwnProperty("max")) chartYAxisParams.max = oXMinMax.max;
+			    chart.addAxis("y", chartYAxisParams);
+
+			    // Add the series of data
+			    chart.addSeries("default", [], 
+			    		{ stroke: {color: "darkgray", width: 2} }	
+				);
+			    
+			    // Add tooltips
+			    //var tip = new ChartTooltip(chart, "default");
+				chart.render();
+				
+				return chart;
+			}
+			
+/*
 	        function createNPAFPRateChart() {
 			 
 				chartNPAFPRate = new Chart("chartNPAFPRate", {"title":"NPAFP Rate"});
@@ -297,7 +368,7 @@
 							return { fill : [0, 115, 76] };
 						}
 					},
-			       	animate: { duration: 500, easing: easing.linear}
+			       	animate: { duration: 500, easing: easing.linear }
 			    });
 			 
 			    // Add axes
@@ -361,7 +432,8 @@
 			    // Add tooltips
 			    //var tip = new ChartTooltip(chartThreePlusDose, "default");
 				chartThreePlusDose.render();
-			}
+			}*/
+
 			
 			/*** END CHARTS ***/
 
