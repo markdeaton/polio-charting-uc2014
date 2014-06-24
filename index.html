@@ -33,17 +33,13 @@
         bottom: 2.5em;
       }
 
-	  #chartThreePlusDose {
+	  #chartThreePlusDose, #chartNPAFPRate, #chartZeroDose {
 	  	width: 250px; 
-		height: 150px; 
+		height: 200px; 
 		margin: 5px auto 0px auto;
 		visibility: visible;
 	  }	
-	  #chartNPAFPRate {
-		width: 250px; 
-		height: 150px; 
-		margin: 5px auto 0px auto;
-	  }
+
       #timeInfo{
 		visibility: hidden;
 		border-radius: 4px;
@@ -146,11 +142,11 @@
 
 	        dlyrThreePlusDose = new ArcGISDynamicMapServiceLayer(config.services.ThreePlusDosePct_poly, 
 	        				{visible:false});
-/*			dlyrZeroDose = new ArcGISDynamicMapServiceLayer(config.services.ZeroDosePct_poly, {visible:false});*/
+			dlyrZeroDose = new ArcGISDynamicMapServiceLayer(config.services.ZeroDosePct_poly, {visible:false});
 
 			dlyrNPAFPRate = new ArcGISDynamicMapServiceLayer(config.services.NPAFPRate_poly, {visible:true});
 			
-	        map.addLayers([basemap, dlyrThreePlusDose, /*dlyrZeroDose,*/ dlyrNPAFPRate]);
+	        map.addLayers([basemap, dlyrThreePlusDose, dlyrZeroDose, dlyrNPAFPRate]);
 			map.on("click", doIdentify);
 	
 	        map.on("layers-add-result", function() {
@@ -196,8 +192,11 @@
 			function doIdentify (event) {
 				// Which service are we identifying and charting?
 				performIdentify(identifyNPAFPRateTask, identifyNPAFPRateParams, chartNPAFPRate, "ValueNumeric", "PeriodStartDate", event.mapPoint);
+/*
 				performIdentify(identifyThreePlusDoseTask, identifyThreePlusDoseParams, chartThreePlusDose, 
-					"THREE_PLUS_DOSES_PER", "PeriodStartDate", event.mapPoint);
+					"ValueNumeric", "PeriodStartDate", event.mapPoint);
+				performIdentify(identifyZeroDoseTask, identifyZeroDoseParams, chartZeroDose, "ValueNumeric", "PeriodStartDate", event.mapPoint);
+*/
 			}	
 			
 			function performIdentify(identifyTask, identifyParams, chart, sAttrFieldName, sDateFieldName, mapPoint) {
@@ -245,7 +244,6 @@
 	            identifyThreePlusDoseParams = new IdentifyParameters();
 	            identifyThreePlusDoseParams.tolerance = 0;
 	            identifyThreePlusDoseParams.returnGeometry = false;
-	            identifyThreePlusDoseParams.layerIds = [0];
 	            identifyThreePlusDoseParams.layerOption = IdentifyParameters.LAYER_OPTION_ALL;
 
 	            
@@ -255,6 +253,12 @@
 	            identifyNPAFPRateParams.returnGeometry = false;
 	            // identifyNPAFPRateParams.layerIds = [0,1,2,3];
 	            identifyNPAFPRateParams.layerOption = IdentifyParameters.LAYER_OPTION_ALL;
+	            
+	            identifyZeroDoseTask = new IdentifyTask(dlyrZeroDose.url);
+	            identifyZeroDoseParams = new IdentifyParameters();
+	            identifyZeroDoseParams.tolerance = 0;
+	            identifyZeroDoseParams.returnGeometry = false;
+	            identifyZeroDoseParams.layerOption = IdentifyParameters.LAYER_OPTION_ALL;
 			}
 			
 			/*** CHARTS ***/
@@ -271,6 +275,7 @@
 			};
 			
 			function createCharts() {
+/*
 				// createThreePlusDoseChart();
 				chartThreePlusDose = createChart("chartThreePlusDose", "3+ Dose Percent",
 					[{maxVal:60, color:[255, 0, 0]},
@@ -280,7 +285,17 @@
 					], 
 					{max:100}
 			);
+
 				// createZeroDoseChart();
+				chartZeroDose = createChart("chartZeroDose", "Zero Dose Percent",
+					[{maxVal:2, color:[199, 215, 158]},
+					 {maxVal:5, color:[255, 255, 115]},
+					 {maxVal:15,color:[230, 152, 0]},
+					 {maxVal:Infinity, color:[255, 0, 0]}
+					],
+					{min:0, max:100});
+					*/
+
 				// createNPAFPRateChart();
 				chartNPAFPRate = createChart("chartNPAFPRate", "NPAFP Rate", 
 					[{maxVal:1, color:[255, 0, 0]},
@@ -297,9 +312,9 @@
 			 * sTitle		: the title for the chart
 			 * arySymbology	: array of {maxVal, color[]} items. The maxVal is an attribute data value and these
 			 * 				  must be specified in ascending order.
-			 * oXMinMax		: object specifying "min" and "max" y values for the chart (both optional)  
+			 * oYMinMax		: object specifying "min" and "max" y values for the chart (both optional)  
 			 */
-	        function createChart(sDivName, sTitle, arySymbology, oXMinMax) {
+	        function createChart(sDivName, sTitle, arySymbology, oYMinMax) {
 			 
 				var chart = new Chart(sDivName, {"title":sTitle});
 			    // Set the theme
@@ -323,12 +338,13 @@
 			 
 			    // Add axes
 			    chart.addAxis("x", chartXAxisParams);
+			    
 			    var chartYAxisParams = { 
 			    	vertical: true, includeZero: true,  
 			    	fixLower: "major", fixUpper: "major"
 			    };
-			    if (oXMinMax.hasOwnProperty("min")) chartYAxisParams.min = oXMinMax.min;
-			    if (oXMinMax.hasOwnProperty("max")) chartYAxisParams.max = oXMinMax.max;
+			    if (oYMinMax.hasOwnProperty("min")) chartYAxisParams.min = oYMinMax.min;
+			    if (oYMinMax.hasOwnProperty("max")) chartYAxisParams.max = oYMinMax.max;
 			    chart.addAxis("y", chartYAxisParams);
 
 			    // Add the series of data
@@ -504,6 +520,7 @@
   	<div data-dojo-type="dojox.layout.TableContainer" data-dojo-props="cols:2" id="chartsDiv">
   		<div id="chartNPAFPRate"></div>
   		<div id="chartThreePlusDose"></div>
+  		<div id="chartZeroDose"></div>
 	</div>
 </body>
 </html>

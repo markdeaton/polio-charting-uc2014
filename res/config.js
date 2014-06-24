@@ -1,9 +1,8 @@
 var config = {
     "services": {
         "basemap":"http://services.arcgisonline.com/arcgis/rest/services/Ocean/World_Ocean_Base/MapServer",
-        "ThreeDosePct_admin1":"http://drumlin:6080/arcgis/rest/services/GPEI/ThreePlusDosePercent/MapServer",
-        "ZeroDosePct_poly":"http://drumlin:6080/arcgis/rest/services/GPEI/ZeroDosePercent/MapServer",
-        "ThreePlusDosePct_poly":"http://drumlin:6080/arcgis/rest/services/GPEI/ThreePlusDosePercent/MapServer",
+        "ZeroDosePct_poly":"http://gpeiproto/arcgis/rest/services/GPEI/ZeroDose_Percent_R6M/MapServer",
+        "ThreePlusDosePct_poly":"http://gpeiproto/arcgis/rest/services/GPEI/ThreePlus_Dose_Percent_R6M/MapServer",
         "NPAFPRate_poly":"http://gpeiproto/arcgis/rest/services/GPEI/NPAFP_Rate_R6M1/MapServer",
         "SIA_Campaigns_Tot":"http://gpeiproto.esri.com/arcgis/rest/services/GPEI/SIA_Campaigns_Total/MapServer"
     },
