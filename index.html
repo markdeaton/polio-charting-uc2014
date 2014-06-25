@@ -20,10 +20,13 @@
 	  }
       #mapDiv {
         position: relative;
+        width: 100%;
         height: 70%;
       }
 	  #chartsDiv {
-	  	width:100%;	  	
+	  	width: 100%;
+	  	padding:0;
+	  	margin:0;
 	  }
       #bottomPanel {
         left: 50%;
@@ -33,10 +36,9 @@
         bottom: 2.5em;
       }
 
-	  #chartThreePlusDose, #chartNPAFPRate, #chartZeroDose {
-	  	width: 250px; 
+	  #chartThreePlusDose, #chartZeroDose, #chartNPAFPRate, #chartStoolAdequacyRate {
 		height: 200px; 
-		margin: 5px auto 0px auto;
+	  	width: 250px; 
 		visibility: visible;
 	  }	
 
@@ -119,9 +121,10 @@
       ) {
       	var identifyThreePlusDoseTask, identifyThreePlusDoseParams;
       	var identifyNPAFPRateTask, identifyNPAFPRateParams;
-	 	var chartThreePlusDose, chartZeroDose, chartNPAFPRate;
+      	var identifyStoolAdequacyRateTask, identifyStoolAdequacyRateParams;
+	 	var chartThreePlusDose, chartZeroDose, chartNPAFPRate, chartStoolAdequacyRate;
      	var cred = "esriuc2014_apl_polio_creds"; // cookie/local storage name
-     	var dlyrThreePlusDose, dlyrZeroDose, dlyrNPAFPRate;
+     	var dlyrThreePlusDose, dlyrZeroDose, dlyrNPAFPRate, dlyrStoolAdequacyRate;
      	
 		ready(function() {
 			// store credentials/serverInfos before the page unloads
@@ -146,7 +149,9 @@
 
 			dlyrNPAFPRate = new ArcGISDynamicMapServiceLayer(config.services.NPAFPRate_poly, {visible:true});
 			
-	        map.addLayers([basemap, dlyrThreePlusDose, dlyrZeroDose, dlyrNPAFPRate]);
+			dlyrStoolAdequacyRate = new ArcGISDynamicMapServiceLayer(config.services.StoolAdequacyRate_poly, {visible:false});
+			
+	        map.addLayers([basemap, dlyrThreePlusDose, dlyrZeroDose, dlyrNPAFPRate, dlyrStoolAdequacyRate]);
 			map.on("click", doIdentify);
 	
 	        map.on("layers-add-result", function() {
@@ -191,12 +196,13 @@
 	
 			function doIdentify (event) {
 				// Which service are we identifying and charting?
-				performIdentify(identifyNPAFPRateTask, identifyNPAFPRateParams, chartNPAFPRate, "ValueNumeric", "PeriodStartDate", event.mapPoint);
-/*
 				performIdentify(identifyThreePlusDoseTask, identifyThreePlusDoseParams, chartThreePlusDose, 
 					"ValueNumeric", "PeriodStartDate", event.mapPoint);
 				performIdentify(identifyZeroDoseTask, identifyZeroDoseParams, chartZeroDose, "ValueNumeric", "PeriodStartDate", event.mapPoint);
-*/
+
+				performIdentify(identifyNPAFPRateTask, identifyNPAFPRateParams, chartNPAFPRate, "ValueNumeric", "PeriodStartDate", event.mapPoint);
+				performIdentify(identifyStoolAdequacyRateTask, identifyStoolAdequacyRateParams, chartStoolAdequacyRate,
+					"ValueNumeric", "PeriodStartDate", event.mapPoint);
 			}	
 			
 			function performIdentify(identifyTask, identifyParams, chart, sAttrFieldName, sDateFieldName, mapPoint) {
@@ -234,7 +240,7 @@
 					}
 					
 					chart.updateSeries("default", aryChartValsCorrected);
-					chart.render();
+					chart.fullRender();
 				});		
 			}
 			
@@ -245,7 +251,12 @@
 	            identifyThreePlusDoseParams.tolerance = 0;
 	            identifyThreePlusDoseParams.returnGeometry = false;
 	            identifyThreePlusDoseParams.layerOption = IdentifyParameters.LAYER_OPTION_ALL;
-
+	            
+	            identifyZeroDoseTask = new IdentifyTask(dlyrZeroDose.url);
+	            identifyZeroDoseParams = new IdentifyParameters();
+	            identifyZeroDoseParams.tolerance = 0;
+	            identifyZeroDoseParams.returnGeometry = false;
+	            identifyZeroDoseParams.layerOption = IdentifyParameters.LAYER_OPTION_ALL;
 	            
 	            identifyNPAFPRateTask = new IdentifyTask(dlyrNPAFPRate.url);
 	            identifyNPAFPRateParams = new IdentifyParameters();
@@ -253,12 +264,12 @@
 	            identifyNPAFPRateParams.returnGeometry = false;
 	            // identifyNPAFPRateParams.layerIds = [0,1,2,3];
 	            identifyNPAFPRateParams.layerOption = IdentifyParameters.LAYER_OPTION_ALL;
-	            
-	            identifyZeroDoseTask = new IdentifyTask(dlyrZeroDose.url);
-	            identifyZeroDoseParams = new IdentifyParameters();
-	            identifyZeroDoseParams.tolerance = 0;
-	            identifyZeroDoseParams.returnGeometry = false;
-	            identifyZeroDoseParams.layerOption = IdentifyParameters.LAYER_OPTION_ALL;
+
+	            identifyStoolAdequacyRateTask = new IdentifyTask(dlyrStoolAdequacyRate.url);
+	            identifyStoolAdequacyRateParams = new IdentifyParameters();
+	            identifyStoolAdequacyRateParams.tolerance = 0;
+	            identifyStoolAdequacyRateParams.returnGeometry = false;
+	            identifyStoolAdequacyRateParams.layerOption = IdentifyParameters.LAYER_OPTION_ALL;
 			}
 			
 			/*** CHARTS ***/
@@ -275,7 +286,7 @@
 			};
 			
 			function createCharts() {
-/*
+
 				// createThreePlusDoseChart();
 				chartThreePlusDose = createChart("chartThreePlusDose", "3+ Dose Percent",
 					[{maxVal:60, color:[255, 0, 0]},
@@ -294,7 +305,7 @@
 					 {maxVal:Infinity, color:[255, 0, 0]}
 					],
 					{min:0, max:100});
-					*/
+					
 
 				// createNPAFPRateChart();
 				chartNPAFPRate = createChart("chartNPAFPRate", "NPAFP Rate", 
@@ -305,6 +316,15 @@
 					], 
 					{}
 				);
+				
+				// createStoolAdequacyRateChart();
+				chartStoolAdequacyRate = createChart("chartStoolAdequacyRate", "Stool Adequacy Rate",
+					[{maxVal:70, color:[255, 0, 0]},
+					 {maxVal:80, color:[255, 255, 115]},
+					 {maxVal:90, color:[171, 205, 102]},
+					 {maxVal:Infinity, color:[0, 115, 76]}
+					],
+					{});
 			}
 			
 			/**
@@ -517,10 +537,11 @@
         </div>
       </div>-->
     </div>
-  	<div data-dojo-type="dojox.layout.TableContainer" data-dojo-props="cols:2" id="chartsDiv">
-  		<div id="chartNPAFPRate"></div>
-  		<div id="chartThreePlusDose"></div>
-  		<div id="chartZeroDose"></div>
+  	<div data-dojo-type="dojox.layout.TableContainer" data-dojo-props="cols:4" id="chartsDiv">
+		<div dojoType="dijit.layout.ContentPane" id="chartThreePlusDose"></div>
+  		<div dojoType="dijit.layout.ContentPane" id="chartZeroDose"></div>
+  		<div dojoType="dijit.layout.ContentPane" id="chartNPAFPRate"></div>
+  		<div dojoType="dijit.layout.ContentPane" id="chartStoolAdequacyRate"></div>
 	</div>
 </body>
 </html>
