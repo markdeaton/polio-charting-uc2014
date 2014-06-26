@@ -235,8 +235,8 @@
 					
 					// Pad with extra empty values so the chart's custom, chronological-order labels apply correctly
 					var iLen = aryChartValsCorrected.length;
-					for (var i = 0; i < 4- iLen; i++) {
-						aryChartValsCorrected.unshift(null);
+					for (var i = 0; i < 4-iLen; i++) {
+						aryChartValsCorrected.unshift(nulls);
 					}
 					
 					chart.updateSeries("default", aryChartValsCorrected);

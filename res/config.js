@@ -1,6 +1,6 @@
 var config = {
     "services": {
-        "basemap":"http://services.arcgisonline.com/arcgis/rest/services/Ocean/World_Ocean_Base/MapServer",
+        "basemap":"http://gpeiproto/arcgis/rest/services/GPEI/OCEANBASEMAP/MapServer",
         "ZeroDosePct_poly":"http://gpeiproto/arcgis/rest/services/GPEI/ZeroDose_Percent_R6M/MapServer",
         "ThreePlusDosePct_poly":"http://gpeiproto/arcgis/rest/services/GPEI/ThreePlus_Dose_Percent_R6M/MapServer",
         "NPAFPRate_poly":"http://gpeiproto/arcgis/rest/services/GPEI/NPAFP_Rate_R6M1/MapServer",
