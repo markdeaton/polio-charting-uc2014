@@ -4,7 +4,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <!--The viewport meta tag is used to improve the presentation and behavior of the samples 
       on iOS devices-->
-    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>Global Polio Eradication Initiative</title>
     
     <link rel="stylesheet" href="http://js.arcgis.com/3.9/js/dojo/dijit/themes/claro/claro.css">
@@ -25,9 +25,16 @@
       }
 	  #chartsDiv {
 	  	width: 100%;
-	  	padding:0;
-	  	margin:0;
+	  	margin: 1;
 	  }
+	  #chartThreePlusDose, #chartZeroDose, #chartNPAFPRate, #chartStoolAdequacyRate {
+		height: 200px; 
+	  	width: 300px;
+	  	margin: -10px;
+		visibility: visible;
+		overflow: hidden;
+	  }	
+
       #bottomPanel {
         left: 50%;
         margin: 0 auto;
@@ -35,12 +42,6 @@
         position: absolute; 
         bottom: 2.5em;
       }
-
-	  #chartThreePlusDose, #chartZeroDose, #chartNPAFPRate, #chartStoolAdequacyRate {
-		height: 200px; 
-	  	width: 250px; 
-		visibility: visible;
-	  }	
 
       #timeInfo{
 		visibility: hidden;
@@ -75,6 +76,7 @@
         "esri/dijit/TimeSlider",
         "dojo/cookie",
         "dojo/json",
+        "dojo/_base/lang",
         "dojo/_base/array", 
         "dojo/_base/unload",
         "dojo/dom-style",
@@ -83,6 +85,7 @@
         "dijit/layout/ContentPane",
 		"dojox/charting/Chart",
  		"dojox/charting/themes/Claro",
+ 		"dojox/charting/plot2d/Base",
  		"dojox/charting/plot2d/Columns",
 	    "dojox/charting/axis2d/Default",
 	    "dojo/fx/easing",
@@ -104,6 +107,7 @@
         TimeSlider,
         cookie,
         JSON,
+        lang,
         arrayUtils,
         baseUnload,
         domStyle,
@@ -112,6 +116,7 @@
         ContentPane,
         Chart,
         ChartTheme, 
+        Plot2DBase,	
         Columns,
         ChartDefaultAxes,
         easing,
@@ -126,7 +131,40 @@
      	var cred = "esriuc2014_apl_polio_creds"; // cookie/local storage name
      	var dlyrThreePlusDose, dlyrZeroDose, dlyrNPAFPRate, dlyrStoolAdequacyRate;
      	
+ /*
+         Plot2DBase.extend({
+             renderLabel: lang.hitch(Plot2DBase, function(group, x, y, label, theme, block, align) {
+                       var elem = ac.createText[this.opt.htmlLabels && gfx.renderer != "vml" ? "html" : "gfx"]
+                     (this.chart, group, x, y, align?align:"middle", label, theme.series.font, theme.series.fontColor);
+                 // if the label is inside we need to avoid catching events on it this would prevent action on
+                 // chart elements
+                 if(block){
+                     // TODO this won't work in IE neither in VML nor in HTML
+                     // a solution would be to catch the event on the label and refire it to the element
+                     // possibly using elementFromPoint or having it already available
+                     if(this.opt.htmlLabels && gfx.renderer != "vml"){
+                         // we have HTML labels, let's use pointEvents on the HTML node
+                         elem.style.pointerEvents = "none";
+                     }else if(elem.rawNode){
+                         // we have SVG labels, let's use pointerEvents on the SVG or VML node
+                         elem.rawNode.style.pointerEvents = "none";
+                     }
+                     // else we have Canvas, we need do nothing, as Canvas text won't catch events
+                 }
+                 if(this.opt.htmlLabels && gfx.renderer != "vml"){
+                     this.htmlElements.push(elem);
+                 }
+                              return elem;
+                 }
+                )
+         });*/
+ 
+
 		ready(function() {
+
+			ChartTheme.chart.fill = [00,00,00,00];
+			ChartTheme.plotarea.fill = [00,00,00,00];
+
 			// store credentials/serverInfos before the page unloads
 			baseUnload.addOnUnload(storeCredentials);
 			// look for credentials in local storage
@@ -353,8 +391,15 @@
 			        		if (item < symbol.maxVal) return { fill: symbol.color };
 			        	}
 					},
-			       	animate: { duration: 500, easing: easing.linear }
+			       	animate: { duration: 500, easing: easing.linear }, htmlLabels: true
 			    });
+			    
+/*
+			    // Label rendering function
+			    chart.getPlot("default").opt.labelFunc = function (value, fixed, precision) {
+			    	return "<div class='plot-label' style='color:#FF0000'>" + value + "</div>";
+				};*/
+
 			 
 			    // Add axes
 			    chart.addAxis("x", chartXAxisParams);
@@ -537,7 +582,7 @@
         </div>
       </div>-->
     </div>
-  	<div data-dojo-type="dojox.layout.TableContainer" data-dojo-props="cols:4" id="chartsDiv">
+  	<div data-dojo-type="dojox.layout.TableContainer" data-dojo-props="cols:4, spacing:0" id="chartsDiv">
 		<div dojoType="dijit.layout.ContentPane" id="chartThreePlusDose"></div>
   		<div dojoType="dijit.layout.ContentPane" id="chartZeroDose"></div>
   		<div dojoType="dijit.layout.ContentPane" id="chartNPAFPRate"></div>
